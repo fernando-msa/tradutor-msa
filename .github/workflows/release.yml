@@ -1,0 +1,35 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build extension zip
+        run: |
+          mkdir -p dist
+          zip -r dist/tradutor-msa-${GITHUB_REF_NAME#v}.zip \
+            manifest.json \
+            popup.html popup.css popup.js \
+            background.js languages.js \
+            permission.html permission.js \
+            440x280_Tradutor.png \
+            LICENSE
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGELOG.md
+          files: dist/*.zip

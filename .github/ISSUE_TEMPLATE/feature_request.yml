@@ -1,0 +1,41 @@
+name: "✨ Feature request"
+description: Sugira uma nova funcionalidade
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Quer melhorar a extensão? Descreva sua ideia abaixo.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema/oportunidade
+      description: Qual dor essa funcionalidade resolve?
+      placeholder: "Hoje preciso abrir o popup manualmente para cada tradução..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Solução proposta
+      description: Como você imagina a funcionalidade?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas (opcional)
+
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade
+      options:
+        - Alta
+        - Média
+        - Baixa
+    validations:
+      required: true

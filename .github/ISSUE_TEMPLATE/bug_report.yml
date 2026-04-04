@@ -1,0 +1,55 @@
+name: "🐞 Bug report"
+description: Reporte um problema na extensão
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar! Preencha os campos abaixo para facilitar a reprodução.
+
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição do problema
+      description: O que aconteceu e qual era o comportamento esperado?
+      placeholder: "Ao clicar em Traduzir, o popup trava..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: navegador
+    attributes:
+      label: Navegador
+      options:
+        - Microsoft Edge
+        - Firefox
+        - Chrome
+        - Outro
+    validations:
+      required: true
+
+  - type: input
+    id: versao_extensao
+    attributes:
+      label: Versão da extensão
+      placeholder: "ex.: 2.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: passos
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Abrir o popup
+        2. Inserir texto
+        3. Clicar em Traduzir
+        4. Ver erro
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidencias
+    attributes:
+      label: Logs, prints ou vídeos (opcional)
+      description: Cole erros de console, imagens ou links.
