@@ -11,7 +11,7 @@
 [![Firefox Add-ons](https://img.shields.io/badge/Firefox-Instalar%20Agora-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/pt-BR/firefox/addon/tradutor-msa/)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Em%20breve-AAAAAA?style=for-the-badge&logo=googlechrome&logoColor=white)](#instalação)
 
-[![Version](https://img.shields.io/badge/versão-2.1.0-blue)](https://github.com/fernando-msa/Tradutor-MSA-Extensao/releases)
+[![Version](https://img.shields.io/badge/versão-2.1-blue)](https://github.com/fernando-msa/Tradutor-MSA-Extensao/releases)
 [![Changelog](https://img.shields.io/badge/changelog-versionado-informational)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/licença-MIT-green)](LICENSE)
 
