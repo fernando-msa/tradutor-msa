@@ -11,7 +11,8 @@
 [![Firefox Add-ons](https://img.shields.io/badge/Firefox-Instalar%20Agora-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/pt-BR/firefox/addon/tradutor-msa/)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Em%20breve-AAAAAA?style=for-the-badge&logo=googlechrome&logoColor=white)](#instalação)
 
-[![Version](https://img.shields.io/badge/versão-2.2-blue)](https://github.com/fernando-msa/Tradutor-MSA-Extensao/releases)
+[![Version](https://img.shields.io/badge/versão-2.1-blue)](https://github.com/fernando-msa/Tradutor-MSA-Extensao/releases)
+[![Changelog](https://img.shields.io/badge/changelog-versionado-informational)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/licença-MIT-green)](LICENSE)
 
 ---
@@ -56,6 +57,36 @@ Enquanto não está na Chrome Web Store, instale manualmente:
 
 ---
 
+
+## 🖼️ Screenshots e GIF
+
+Para manter o repositório compatível (sem duplicar binários), a documentação aponta para os materiais já existentes de loja:
+
+- Popup: `440x280_Tradutor.png`
+- Menu de contexto / promo: `assets/store/listing/bl.promocional.png`
+- GIF de demonstração: publicar como asset de release e linkar nesta seção.
+
+---
+
+## 🚀 Releases oficiais
+
+Os builds distribuíveis agora são gerados por **GitHub Releases** via workflow (`.github/workflows/release.yml`).
+
+### Como publicar uma nova versão
+
+1. Atualize o `CHANGELOG.md`
+2. Ajuste a versão no `manifest.json`
+3. Crie uma tag semântica:
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+4. O GitHub Actions gera automaticamente o arquivo `.zip` em `dist/` e publica nos Releases.
+
+---
+
 ## 🖥️ Como Usar
 
 ### Tradução pelo popup
@@ -89,14 +120,15 @@ Enquanto não está na Chrome Web Store, instale manualmente:
 
 ```
 Tradutor-MSA-Extensao/
-├── manifest.json       # Configuração da extensão (Manifest V3)
-├── popup.html          # Interface principal do popup
-├── popup.css           # Estilos do popup
-├── popup.js            # Lógica principal: tradução, voz, histórico, clipboard
-├── background.js       # Service Worker: menu de contexto
-├── languages.js        # Lista de idiomas suportados
-├── permission.html     # Página de solicitação de permissão de microfone
-└── permission.js       # Lógica da permissão de microfone
+├── manifest.json                 # Configuração da extensão (Manifest V3)
+├── popup.html / popup.css / popup.js
+├── background.js / languages.js
+├── permission.html / permission.js
+├── CHANGELOG.md                  # Changelog por versão
+├── .github/
+│   ├── workflows/release.yml     # Build e publicação no GitHub Releases
+│   └── ISSUE_TEMPLATE/           # Templates de bug e feature request
+└── assets/store/listing/         # Materiais promocionais/loja e imagens de documentação
 ```
 
 ---
@@ -171,7 +203,7 @@ Contribuições são bem-vindas!
 3. Commite: `git commit -m 'feat: descrição da melhoria'`
 4. Abra um Pull Request
 
-Para reportar bugs ou sugerir funcionalidades, abra uma [Issue](https://github.com/fernando-msa/Tradutor-MSA-Extensao/issues).
+Para reportar bugs ou sugerir funcionalidades, use os templates em [Issues](https://github.com/fernando-msa/Tradutor-MSA-Extensao/issues/new/choose).
 
 ---
 
