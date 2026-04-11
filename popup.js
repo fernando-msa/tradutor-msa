@@ -1,4 +1,7 @@
+// Prefer `chrome` (callback-based) over `browser` (Promise-based) for cross-browser compatibility.
+// When only the Firefox-native `browser` is available, `storageIsPromiseBased` guards the storage helpers.
 const browserApi = globalThis.chrome ?? globalThis.browser;
+const storageIsPromiseBased = browserApi != null && browserApi === globalThis.browser && globalThis.chrome == null;
 const STORAGE_KEYS = {
   history: 'history',
   lastSource: 'lastSource',
@@ -537,13 +540,16 @@ function openPopupWindow(url, width, height) {
 }
 
 function storageGet(keys) {
-  return new Promise((resolve) => {
-    if (!browserApi?.storage?.local) {
-      resolve({});
-      return;
-    }
+  if (!browserApi?.storage?.local) {
+    return Promise.resolve({});
+  }
 
-    const maybePromise = browserApi.storage.local.get(keys, (result) => {
+  if (storageIsPromiseBased) {
+    return browserApi.storage.local.get(keys).then((r) => r || {}).catch(() => ({}));
+  }
+
+  return new Promise((resolve) => {
+    browserApi.storage.local.get(keys, (result) => {
       if (browserApi.runtime?.lastError) {
         console.error(browserApi.runtime.lastError.message);
         resolve({});
@@ -551,31 +557,24 @@ function storageGet(keys) {
       }
       resolve(result || {});
     });
-
-    // Firefox's `browser` API returns a Promise; handle it when no callback is invoked.
-    if (maybePromise && typeof maybePromise.then === 'function') {
-      maybePromise.then((r) => resolve(r || {})).catch(() => resolve({}));
-    }
   });
 }
 
 function storageSet(values) {
-  return new Promise((resolve) => {
-    if (!browserApi?.storage?.local) {
-      resolve();
-      return;
-    }
+  if (!browserApi?.storage?.local) {
+    return Promise.resolve();
+  }
 
-    const maybePromise = browserApi.storage.local.set(values, () => {
+  if (storageIsPromiseBased) {
+    return browserApi.storage.local.set(values).catch(() => {});
+  }
+
+  return new Promise((resolve) => {
+    browserApi.storage.local.set(values, () => {
       if (browserApi.runtime?.lastError) {
         console.error(browserApi.runtime.lastError.message);
       }
       resolve();
     });
-
-    // Firefox's `browser` API returns a Promise; handle it when no callback is invoked.
-    if (maybePromise && typeof maybePromise.then === 'function') {
-      maybePromise.then(() => resolve()).catch(() => resolve());
-    }
   });
 }
