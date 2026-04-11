@@ -235,7 +235,7 @@ function swapLanguagesAndTexts() {
   const source = sourceLangSelect.value;
   const target = targetLangSelect.value;
 
-  sourceLangSelect.value = source === DEFAULT_SOURCE ? target : target;
+  sourceLangSelect.value = target;
   targetLangSelect.value = source === DEFAULT_SOURCE ? DEFAULT_TARGET : source;
 
   const currentSourceText = sourceText.value;
