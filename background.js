@@ -1,27 +1,27 @@
+const CONTEXT_MENU_ID = 'translate-selection';
+
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
-        id: "translate-selection",
-        title: "Traduzir com Tradutor MSA",
-        contexts: ["selection"]
+      id: CONTEXT_MENU_ID,
+      title: 'Traduzir com Tradutor MSA',
+      contexts: ['selection']
     });
+  });
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === "translate-selection" && info.selectionText) {
-        // Open popup.html in a new small window with the text as a parameter
-        const text = encodeURIComponent(info.selectionText);
-        const width = 340;
-        const height = 500;
+chrome.contextMenus.onClicked.addListener((info) => {
+  if (info.menuItemId !== CONTEXT_MENU_ID || !info.selectionText) return;
 
-        // Calculate center (optional, mainly for UX)
-        // Note: 'bg' scripts don't have access to screen dimensions easily in MV3 non-persistent, 
-        // but we can just let OS decide or use default top/left.
+  const text = info.selectionText.trim().slice(0, 5000);
+  if (!text) return;
 
-        chrome.windows.create({
-            url: `popup.html?text=${text}&auto=true`,
-            type: "popup",
-            width: width,
-            height: height
-        });
-    }
+  const url = `popup.html?text=${encodeURIComponent(text)}&auto=true`;
+  chrome.windows.create({
+    url,
+    type: 'popup',
+    width: 360,
+    height: 560,
+    focused: true
+  });
 });

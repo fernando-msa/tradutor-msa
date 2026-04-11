@@ -1,24 +1,28 @@
 {
   "manifest_version": 3,
   "name": "Tradutor MSA Extensão",
-  "version": "2.1",
-  "description": "Extensão de tradução simples e rápida.",
+  "version": "2.2.0",
+  "description": "Extensão leve de tradução focada em produtividade, com histórico local, voz e menu de contexto.",
   "icons": {
     "16": "440x280_Tradutor.png",
     "48": "440x280_Tradutor.png",
     "128": "440x280_Tradutor.png"
   },
   "permissions": [
-    "activeTab",
-    "scripting",
     "contextMenus",
     "storage"
   ],
+  "host_permissions": [
+    "https://api.mymemory.translated.net/*"
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Traduzir"
+    "default_title": "Tradutor MSA"
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.mymemory.translated.net;"
   }
 }
