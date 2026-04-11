@@ -1,4 +1,20 @@
-// Elements
+const browserApi = globalThis.browser || globalThis.chrome;
+const STORAGE_KEYS = {
+  history: 'history',
+  lastSource: 'lastSource',
+  lastTarget: 'lastTarget',
+  translationCount: 'translationCount',
+  hasReviewed: 'hasReviewed',
+  cache: 'translationCache'
+};
+const HISTORY_LIMIT = 20;
+const CACHE_LIMIT = 30;
+const REVIEW_THRESHOLD = 5;
+const DEFAULT_SOURCE = 'autodetect';
+const DEFAULT_TARGET = 'en-US';
+const REVIEW_URL = 'https://microsoftedge.microsoft.com/addons/detail/tradutor-r%C3%A1pido-edge/dkojdeehfjpjphkndhagfbhknnlckami';
+const SUPPORT_URL = 'https://github.com/fernando-msa/Tradutor-MSA-Extensao/issues';
+
 const sourceLangSelect = document.getElementById('sourceLang');
 const targetLangSelect = document.getElementById('targetLang');
 const sourceText = document.getElementById('sourceText');
@@ -14,476 +30,542 @@ const statusMessage = document.getElementById('statusMessage');
 const reviewBanner = document.getElementById('reviewBanner');
 const rateBtn = document.getElementById('rateBtn');
 const closeRateBtn = document.getElementById('closeRateBtn');
-
-// Tabs
-const tabs = document.querySelectorAll('.tab-btn');
-const views = document.querySelectorAll('.view');
+const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+const views = Array.from(document.querySelectorAll('.view'));
 const historyList = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const supportBtn = document.getElementById('supportBtn');
 
-// State
 let isTranslating = false;
+let lastRequestId = 0;
+let voices = [];
+let speechRecognition;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
   populateLanguages();
-  loadSettings(); // Load settings first
-
-  // Check for URL parameters (Context Menu)
-  const urlParams = new URLSearchParams(window.location.search);
-  const textParam = urlParams.get('text');
-  const autoParam = urlParams.get('auto');
-
-  if (textParam) {
-    sourceText.value = textParam;
-    if (autoParam === 'true') {
-      // Delay slightly to ensure settings/DOM are ready
-      setTimeout(translate, 500);
-    }
-  }
-
-  loadHistory();
   setupTabs();
-});
+  bindEvents();
+  setupVoiceOutput();
 
-// Populate Language Dropdowns
-function populateLanguages() {
-  // Add Auto Detect to Source
-  const autoOption = document.createElement('option');
-  autoOption.value = 'autodetect';
-  autoOption.textContent = 'Detectar Idioma';
-  sourceLangSelect.appendChild(autoOption);
-
-  // Populate from LANGUAGES constant (loaded from languages.js)
-  for (const [code, name] of Object.entries(LANGUAGES)) {
-    const optionSource = document.createElement('option');
-    optionSource.value = code;
-    optionSource.textContent = name;
-    sourceLangSelect.appendChild(optionSource);
-
-    const optionTarget = document.createElement('option');
-    optionTarget.value = code;
-    optionTarget.textContent = name;
-    targetLangSelect.appendChild(optionTarget);
-  }
-
-  // Defaults (will be overwritten by loadSettings if available)
-  sourceLangSelect.value = 'autodetect';
-  targetLangSelect.value = 'en-US';
-
-  // Update voices if already loaded
-  updateVoiceOptions();
+  await loadSettings();
+  await loadHistory();
+  await showReviewBannerIfNeeded();
+  preloadContextMenuSelection();
+  updateActionButtons();
 }
 
-targetLangSelect.addEventListener('change', updateVoiceOptions);
+function bindEvents() {
+  sourceText.addEventListener('input', updateActionButtons);
+  targetText.addEventListener('input', updateActionButtons);
+  translateBtn.addEventListener('click', handleTranslate);
+  swapBtn.addEventListener('click', swapLanguagesAndTexts);
+  sourceText.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key === 'Enter') handleTranslate();
+  });
 
-// Voice Selection Logic
-let voices = [];
+  targetLangSelect.addEventListener('change', updateVoiceOptions);
+  micBtn.addEventListener('click', startSpeechToText);
+  speakBtn.addEventListener('click', speakTranslatedText);
+  copySourceBtn.addEventListener('click', () => copyToClipboard(sourceText.value));
+  copyTargetBtn.addEventListener('click', () => copyToClipboard(targetText.value));
+
+  clearHistoryBtn.addEventListener('click', clearHistory);
+  supportBtn.addEventListener('click', () => openNewTab(SUPPORT_URL));
+
+  rateBtn.addEventListener('click', async () => {
+    await storageSet({ [STORAGE_KEYS.hasReviewed]: true });
+    hideReviewBanner();
+    openNewTab(REVIEW_URL);
+  });
+
+  closeRateBtn.addEventListener('click', async () => {
+    await storageSet({ [STORAGE_KEYS.hasReviewed]: true });
+    hideReviewBanner();
+  });
+}
+
+function populateLanguages() {
+  sourceLangSelect.textContent = '';
+  targetLangSelect.textContent = '';
+
+  sourceLangSelect.appendChild(createOption(DEFAULT_SOURCE, 'Detectar idioma'));
+  Object.entries(LANGUAGES).forEach(([code, name]) => {
+    sourceLangSelect.appendChild(createOption(code, name));
+    targetLangSelect.appendChild(createOption(code, name));
+  });
+
+  sourceLangSelect.value = DEFAULT_SOURCE;
+  targetLangSelect.value = DEFAULT_TARGET;
+}
+
+function setupTabs() {
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const selectedTab = tab.dataset.tab;
+      tabs.forEach((item) => {
+        const isActive = item === tab;
+        item.classList.toggle('active', isActive);
+        item.setAttribute('aria-selected', String(isActive));
+      });
+
+      views.forEach((view) => {
+        view.classList.toggle('active', view.id === `${selectedTab}-view`);
+      });
+
+      if (selectedTab === 'history') loadHistory();
+    });
+  });
+}
+
+async function handleTranslate() {
+  const text = sanitizeInput(sourceText.value);
+  if (!text) {
+    setStatus('Digite algum texto para traduzir.', 'info');
+    return;
+  }
+
+  if (isTranslating) {
+    setStatus('Uma tradução já está em andamento.', 'info');
+    return;
+  }
+
+  const source = sourceLangSelect.value;
+  const target = targetLangSelect.value;
+  if (source !== DEFAULT_SOURCE && source === target) {
+    setStatus('Escolha idiomas diferentes para origem e destino.', 'info');
+    return;
+  }
+
+  setTranslatingState(true);
+  const requestId = ++lastRequestId;
+  const cacheKey = `${source}|${target}|${text.toLowerCase()}`;
+
+  try {
+    const cached = await getFromCache(cacheKey);
+    if (cached) {
+      applyTranslationResult(cached.translatedText, cached.detectedSource || source, target, text, true, requestId);
+      return;
+    }
+
+    const data = await requestTranslation(text, source, target);
+    if (requestId !== lastRequestId) return;
+
+    const translatedText = (data.responseData?.translatedText || '').trim();
+    if (!translatedText) throw new Error('Resposta vazia da API.');
+
+    const detectedSource = data.responseData?.detectedSourceLanguage || source;
+    await cacheTranslation(cacheKey, translatedText, detectedSource);
+    await applyTranslationResult(translatedText, detectedSource, target, text, false, requestId);
+  } catch (error) {
+    console.error('Falha na tradução:', error);
+    targetText.value = '';
+    targetText.placeholder = 'Não foi possível traduzir agora.';
+    setStatus(getFriendlyError(error), 'error');
+  } finally {
+    if (requestId === lastRequestId) setTranslatingState(false);
+  }
+}
+
+async function requestTranslation(text, source, target) {
+  const apiSource = source === DEFAULT_SOURCE ? 'Autodetect' : source;
+  const url = new URL('https://api.mymemory.translated.net/get');
+  url.searchParams.set('q', text);
+  url.searchParams.set('langpair', `${apiSource}|${target}`);
+
+  const response = await fetch(url.toString());
+  if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
+
+  const data = await response.json();
+  if (data.responseStatus !== 200) {
+    throw new Error(data.responseDetails || `Erro da API (${data.responseStatus || 'desconhecido'})`);
+  }
+
+  return data;
+}
+
+async function applyTranslationResult(translatedText, detectedSource, target, originalText, fromCache, requestId) {
+  if (requestId !== lastRequestId) return;
+
+  targetText.value = translatedText;
+  await saveToHistory(originalText, translatedText, detectedSource, target);
+  await incrementTranslationCount();
+  setStatus(fromCache ? 'Tradução recuperada do cache local.' : 'Tradução concluída.', 'success');
+
+  await storageSet({
+    [STORAGE_KEYS.lastSource]: sourceLangSelect.value,
+    [STORAGE_KEYS.lastTarget]: targetLangSelect.value
+  });
+
+  if (tabs[1]?.classList.contains('active')) await loadHistory();
+  updateActionButtons();
+}
+
+function sanitizeInput(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function setTranslatingState(loading) {
+  isTranslating = loading;
+  translateBtn.disabled = loading;
+  micBtn.disabled = loading;
+  sourceLangSelect.disabled = loading;
+  targetLangSelect.disabled = loading;
+  translateBtn.textContent = loading ? 'Traduzindo…' : 'Traduzir';
+
+  if (loading) {
+    setStatus('Enviando texto para tradução…', 'info');
+    targetText.value = '';
+    targetText.placeholder = 'Aguardando resposta da API…';
+  }
+}
+
+function updateActionButtons() {
+  const hasSource = Boolean(sanitizeInput(sourceText.value));
+  const hasTarget = Boolean(sanitizeInput(targetText.value));
+
+  translateBtn.disabled = isTranslating || !hasSource;
+  copySourceBtn.disabled = !hasSource;
+  copyTargetBtn.disabled = !hasTarget;
+  speakBtn.disabled = !hasTarget;
+}
+
+function swapLanguagesAndTexts() {
+  const source = sourceLangSelect.value;
+  const target = targetLangSelect.value;
+
+  sourceLangSelect.value = source === DEFAULT_SOURCE ? target : target;
+  targetLangSelect.value = source === DEFAULT_SOURCE ? DEFAULT_TARGET : source;
+
+  const currentSourceText = sourceText.value;
+  if (targetText.value.trim()) {
+    sourceText.value = targetText.value;
+    targetText.value = currentSourceText;
+  }
+
+  updateVoiceOptions();
+  updateActionButtons();
+}
+
+function setupVoiceOutput() {
+  if (!('speechSynthesis' in window)) {
+    voiceSelect.disabled = true;
+    speakBtn.disabled = true;
+    return;
+  }
+
+  populateVoices();
+  window.speechSynthesis.onvoiceschanged = populateVoices;
+}
 
 function populateVoices() {
   voices = window.speechSynthesis.getVoices();
   updateVoiceOptions();
 }
 
-if (window.speechSynthesis.onvoiceschanged !== undefined) {
-  window.speechSynthesis.onvoiceschanged = populateVoices;
-}
-
 function updateVoiceOptions() {
-  if (!voiceSelect) return;
-  const targetLang = targetLangSelect.value;
-  voiceSelect.innerHTML = '<option value="">Voz Padrão</option>';
+  voiceSelect.textContent = '';
+  voiceSelect.appendChild(createOption('', 'Voz padrão'));
 
-  if (!voices.length) return;
-
-  const langPrefix = targetLang.split('-')[0].toLowerCase();
-  const matchingVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
-
-  matchingVoices.forEach(voice => {
-    const option = document.createElement('option');
-    option.value = voice.voiceURI;
-    let name = voice.name;
-    if (name.includes('Desktop')) name = name.replace('- Desktop', '').replace('Desktop', '').trim();
-    if (name.includes('Microsoft')) name = name.replace('Microsoft', '').trim();
-    option.textContent = name;
-    voiceSelect.appendChild(option);
-  });
-}
-
-// Tab Switching
-function setupTabs() {
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      // Deactivate all
-      tabs.forEach(t => t.classList.remove('active'));
-      views.forEach(v => v.classList.remove('active'));
-
-      // Activate clicked
-      tab.classList.add('active');
-      const tabName = tab.dataset.tab;
-      document.getElementById(`${tabName}-view`).classList.add('active');
-
-      if (tabName === 'history') {
-        loadHistory();
-      }
+  const langPrefix = targetLangSelect.value.split('-')[0].toLowerCase();
+  voices
+    .filter((voice) => voice.lang.toLowerCase().startsWith(langPrefix))
+    .forEach((voice) => {
+      voiceSelect.appendChild(createOption(voice.voiceURI, cleanVoiceName(voice.name)));
     });
-  });
 }
 
-// Translation Logic
-async function translate() {
-  const text = sourceText.value.trim();
-  if (!text) return;
-
-  if (isTranslating) return;
-  isTranslating = true;
-  translateBtn.disabled = true;
-  translateBtn.textContent = 'Traduzindo...';
-  statusMessage.textContent = '';
-  targetText.placeholder = 'Traduzindo...';
-  targetText.value = '';
-
-  let source = sourceLangSelect.value;
-  const target = targetLangSelect.value;
-
-  // API handling for 'autodetect'
-  const apiSource = source === 'autodetect' ? 'Autodetect' : source;
-
-  const pair = `${apiSource}|${target}`;
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
-
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.responseStatus === 200) {
-      const translatedText = data.responseData.translatedText;
-      targetText.value = translatedText;
-
-      // Save logic (only if valid translation)
-      if (translatedText) {
-        const detectedSource = data.responseData.detectedSourceLanguage || source;
-        saveToHistory(text, translatedText, detectedSource, target);
-        incrementTranslationCount();
-      }
-
-      statusMessage.textContent = 'Tradução concluída!';
-      setTimeout(() => statusMessage.textContent = '', 2000);
-    } else {
-      targetText.value = '';
-      targetText.placeholder = 'Erro na tradução.';
-      statusMessage.textContent = `Erro API: ${data.responseDetails || data.responseStatus}`;
-    }
-  } catch (error) {
-    console.error('Translation Error:', error);
-    statusMessage.textContent = 'Erro de conexão/internet.';
-  } finally {
-    isTranslating = false;
-    translateBtn.disabled = false;
-    translateBtn.textContent = 'Traduzir';
-
-    // Save last used languages
-    if (chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({
-        lastSource: sourceLangSelect.value,
-        lastTarget: targetLangSelect.value
-      });
-    }
-  }
+function cleanVoiceName(name) {
+  return name.replace(/-?\s*desktop/gi, '').replace(/microsoft/gi, '').trim() || name;
 }
 
-// History Management
-function saveToHistory(original, translated, source, target) {
-  if (!chrome.storage || !chrome.storage.local) {
-    console.error("Storage API NOT available");
-    return;
-  }
-
-  chrome.storage.local.get(['history'], (result) => {
-    let history = result.history || [];
-
-    // Check duplicates (optional, but good UX)
-    const isDuplicate = history.some(item => item.original === original && item.target === target);
-    if (isDuplicate) return;
-
-    // New item
-    const newItem = {
-      original,
-      translated,
-      source,
-      target,
-      timestamp: Date.now()
-    };
-
-    // Add to beginning, limit to 20 items
-    history.unshift(newItem);
-    if (history.length > 20) history.pop();
-
-    chrome.storage.local.set({ history }, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Error saving history:", chrome.runtime.lastError);
-      }
-    });
-  });
-}
-
-function loadHistory() {
-  if (!chrome.storage || !chrome.storage.local) {
-    historyList.innerHTML = '<li class="empty-state">Erro: Armazenamento indisponível.</li>';
-    return;
-  }
-
-  chrome.storage.local.get(['history'], (result) => {
-    if (chrome.runtime.lastError) {
-      historyList.innerHTML = '<li class="empty-state">Erro ao carregar histórico.</li>';
-      return;
-    }
-    const history = result.history || [];
-    renderHistory(history);
-  });
-}
-
-function renderHistory(history) {
-  historyList.innerHTML = '';
-
-  if (!history || history.length === 0) {
-    historyList.innerHTML = '<li class="empty-state">Nenhum histórico ainda.</li>';
-    return;
-  }
-
-  history.forEach(item => {
-    const li = document.createElement('li');
-    li.className = 'history-item';
-    li.innerHTML = `
-      <div class="history-lang">${getLangName(item.source)} → ${getLangName(item.target)}</div>
-      <div class="history-original" title="${item.original}">${item.original}</div>
-      <div class="history-translated" title="${item.translated}">${item.translated}</div>
-    `;
-
-    li.addEventListener('click', () => {
-      // Load into translator
-      sourceText.value = item.original;
-      targetText.value = item.translated;
-
-      // Try to set source (handle auto case)
-      let srcCode = item.source === 'Autodetect' ? 'autodetect' : item.source;
-      if (item.source && item.source !== 'Autodetect') {
-        // Check if option exists, if not default to auto
-        if (!sourceLangSelect.querySelector(`option[value="${srcCode}"]`)) {
-          srcCode = 'autodetect';
-        }
-      }
-      sourceLangSelect.value = srcCode;
-      targetLangSelect.value = item.target;
-
-      // Switch tab
-      tabs[0].click(); // Click Translator tab
-    });
-
-    historyList.appendChild(li);
-  });
-}
-
-function getLangName(code) {
-  if (!code || code === 'Autodetect') return 'Detectado';
-  return LANGUAGES[code] || code;
-}
-
-clearHistoryBtn.addEventListener('click', () => {
-  if (confirm('Tem certeza que deseja limpar o histórico?')) {
-    chrome.storage.local.set({ history: [] }, () => {
-      loadHistory();
-    });
-  }
-});
-
-function loadSettings() {
-  if (!chrome.storage || !chrome.storage.local) return;
-  chrome.storage.local.get(['lastSource', 'lastTarget'], (result) => {
-    if (result.lastSource) sourceLangSelect.value = result.lastSource;
-    if (result.lastTarget) targetLangSelect.value = result.lastTarget;
-  });
-}
-
-// Voice Input (Speech to Text)
-micBtn.addEventListener('click', () => {
-  if (!('webkitSpeechRecognition' in window)) {
-    alert('Seu navegador não suporta reconhecimento de voz.');
-    return;
-  }
-
-  const recognition = new webkitSpeechRecognition();
-
-  // Configure Language
-  let lang = sourceLangSelect.value;
-  if (lang === 'autodetect') {
-    lang = navigator.language || 'pt-BR'; // Default to browser or PT-BR
-  }
-  recognition.lang = lang;
-
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  micBtn.classList.add('active');
-  statusMessage.textContent = 'Ouvindo... (Fale agora)';
-
-  recognition.onstart = () => {
-    console.log('Voice recognition started');
-  };
-
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    sourceText.value = transcript;
-    translate(); // Auto translate after speak
-  };
-
-  recognition.onerror = (event) => {
-    console.error('Speech error', event);
-    if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-      statusMessage.textContent = 'Permissão necessária.';
-      // Open small popup window instead of full tab
-      chrome.windows.create({
-        url: 'permission.html',
-        type: 'popup',
-        width: 360,
-        height: 320,
-        focused: true
-      });
-    } else if (event.error === 'network') {
-      statusMessage.textContent = 'Erro de Rede. Verifique sua internet.';
-    } else if (event.error === 'no-speech') {
-      statusMessage.textContent = 'Erro: Nenhuma fala detectada.';
-    } else {
-      statusMessage.textContent = `Erro Voz: ${event.error}`;
-    }
-    micBtn.classList.remove('active');
-  };
-
-  recognition.onnomatch = (event) => {
-    statusMessage.textContent = 'Não entendi. Tente novamente.';
-    micBtn.classList.remove('active');
-  };
-
-  recognition.onend = () => {
-    micBtn.classList.remove('active');
-    if (statusMessage.textContent.includes('Ouvindo')) {
-      statusMessage.textContent = '';
-    }
-  };
-
-  recognition.start();
-});
-
-// Voice Output (Text to Speech)
-speakBtn.addEventListener('click', () => {
-  const text = targetText.value;
+function speakTranslatedText() {
+  const text = sanitizeInput(targetText.value);
   if (!text) {
-    statusMessage.textContent = 'Nada para ouvir.';
+    setStatus('Não há tradução para reproduzir.', 'info');
     return;
   }
 
-  // Cancel any current speaking
+  if (!('speechSynthesis' in window)) {
+    setStatus('Leitura em voz alta não está disponível neste navegador.', 'info');
+    return;
+  }
+
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = targetLangSelect.value;
-
-  const selectedVoiceURI = voiceSelect.value;
-  if (selectedVoiceURI) {
-    const voice = voices.find(v => v.voiceURI === selectedVoiceURI);
-    if (voice) utterance.voice = voice;
-  }
-
-  utterance.onerror = (e) => {
-    console.error('TTS Error:', e);
-    statusMessage.textContent = 'Erro ao reproduzir áudio.';
-  };
+  const selectedVoice = voices.find((voice) => voice.voiceURI === voiceSelect.value);
+  if (selectedVoice) utterance.voice = selectedVoice;
+  utterance.onerror = () => setStatus('Não foi possível reproduzir o áudio.', 'error');
 
   window.speechSynthesis.speak(utterance);
-});
-
-// Copy Functions
-function copyToClipboard(text) {
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    statusMessage.textContent = 'Copiado!';
-    setTimeout(() => statusMessage.textContent = '', 1500);
-  });
 }
 
-copySourceBtn.addEventListener('click', () => copyToClipboard(sourceText.value));
-copyTargetBtn.addEventListener('click', () => copyToClipboard(targetText.value));
-
-// Other Events
-swapBtn.addEventListener('click', () => {
-  const sVal = sourceLangSelect.value;
-  const tVal = targetLangSelect.value;
-
-  if (sVal === 'autodetect') {
-    sourceLangSelect.value = tVal;
-    targetLangSelect.value = 'en-US';
-  } else {
-    sourceLangSelect.value = tVal;
-    targetLangSelect.value = sVal;
+function startSpeechToText() {
+  const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognitionApi) {
+    setStatus('Ditado por voz não é suportado neste navegador.', 'info');
+    return;
   }
 
-  const sText = sourceText.value;
-  // Only swap if target has text, otherwise just swap langs
-  if (targetText.value) {
-    sourceText.value = targetText.value;
-    targetText.value = sText;
-  }
-});
+  if (speechRecognition) speechRecognition.abort();
+  speechRecognition = new SpeechRecognitionApi();
+  speechRecognition.lang = sourceLangSelect.value === DEFAULT_SOURCE ? (navigator.language || 'pt-BR') : sourceLangSelect.value;
+  speechRecognition.continuous = false;
+  speechRecognition.interimResults = false;
 
-translateBtn.addEventListener('click', translate);
+  micBtn.classList.add('active');
+  setStatus('Ouvindo… fale agora.', 'info');
 
-sourceText.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key === 'Enter') {
-    translate();
-  }
-});
+  speechRecognition.onresult = (event) => {
+    const transcript = event.results?.[0]?.[0]?.transcript || '';
+    sourceText.value = transcript;
+    updateActionButtons();
+    handleTranslate();
+  };
 
-// Support Button
-document.getElementById('supportBtn').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://github.com/fernando-msa/Tradutor-MSA-Extensao/issues' });
-});
-
-// Review Banner Logic
-function incrementTranslationCount() {
-  if (!chrome.storage || !chrome.storage.local) return;
-  chrome.storage.local.get(['translationCount', 'hasReviewed'], (result) => {
-    if (result.hasReviewed) return;
-
-    let count = (result.translationCount || 0) + 1;
-    chrome.storage.local.set({ translationCount: count });
-
-    if (count === 5) {
-      if (reviewBanner) reviewBanner.style.display = 'block';
+  speechRecognition.onerror = (event) => {
+    if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+      setStatus('Permissão de microfone negada. Abra a ajuda para conceder acesso.', 'error');
+      openPopupWindow('permission.html', 360, 340);
+      return;
     }
+
+    if (event.error === 'no-speech') {
+      setStatus('Nenhuma fala detectada. Tente novamente.', 'info');
+      return;
+    }
+
+    if (event.error === 'network') {
+      setStatus('Erro de rede no reconhecimento de voz.', 'error');
+      return;
+    }
+
+    setStatus(`Erro no reconhecimento de voz (${event.error}).`, 'error');
+  };
+
+  speechRecognition.onend = () => {
+    micBtn.classList.remove('active');
+  };
+
+  try {
+    speechRecognition.start();
+  } catch {
+    micBtn.classList.remove('active');
+    setStatus('Não foi possível iniciar o microfone agora.', 'error');
+  }
+}
+
+async function copyToClipboard(text) {
+  const safeText = String(text || '').trim();
+  if (!safeText) return;
+
+  try {
+    await navigator.clipboard.writeText(safeText);
+    setStatus('Texto copiado.', 'success');
+  } catch (error) {
+    console.error('Erro ao copiar texto:', error);
+    setStatus('Falha ao copiar texto.', 'error');
+  }
+}
+
+async function saveToHistory(original, translated, source, target) {
+  const { [STORAGE_KEYS.history]: existingHistory = [] } = await storageGet([STORAGE_KEYS.history]);
+
+  const normalizedOriginal = sanitizeInput(original);
+  const history = existingHistory.filter((item) => sanitizeInput(item.original) !== normalizedOriginal || item.target !== target);
+  history.unshift({ original: normalizedOriginal, translated, source, target, timestamp: Date.now() });
+
+  await storageSet({ [STORAGE_KEYS.history]: history.slice(0, HISTORY_LIMIT) });
+}
+
+async function loadHistory() {
+  const { [STORAGE_KEYS.history]: history = [] } = await storageGet([STORAGE_KEYS.history]);
+  renderHistory(history);
+}
+
+function renderHistory(history) {
+  historyList.textContent = '';
+
+  if (!history.length) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.textContent = 'Ainda não há traduções salvas.';
+    historyList.appendChild(empty);
+    return;
+  }
+
+  history.forEach((item) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Carregar tradução no editor');
+    button.addEventListener('click', () => useHistoryItem(item));
+
+    const lang = document.createElement('div');
+    lang.className = 'history-lang';
+    lang.textContent = `${getLangName(item.source)} → ${getLangName(item.target)}`;
+
+    const original = document.createElement('div');
+    original.className = 'history-original';
+    original.textContent = item.original;
+    original.title = item.original;
+
+    const translated = document.createElement('div');
+    translated.className = 'history-translated';
+    translated.textContent = item.translated;
+    translated.title = item.translated;
+
+    button.append(lang, original, translated);
+    li.appendChild(button);
+    historyList.appendChild(li);
   });
 }
 
-if (rateBtn) {
-  rateBtn.addEventListener('click', () => {
-    if (chrome.storage && chrome.storage.local) chrome.storage.local.set({ hasReviewed: true });
-    reviewBanner.style.display = 'none';
-    chrome.tabs.create({ url: 'https://microsoftedge.microsoft.com/addons/detail/tradutor-r%C3%A1pido-edge/dkojdeehfjpjphkndhagfbhknnlckami' });
-```
+function useHistoryItem(item) {
+  sourceText.value = item.original;
+  targetText.value = item.translated;
+  sourceLangSelect.value = item.source === 'Autodetect' ? DEFAULT_SOURCE : ensureLanguageValue(item.source, DEFAULT_SOURCE, sourceLangSelect);
+  targetLangSelect.value = ensureLanguageValue(item.target, DEFAULT_TARGET, targetLangSelect);
+  tabs[0].click();
+  updateVoiceOptions();
+  updateActionButtons();
+}
 
-**Pelo GitHub web:**
-1. Acesse `Tradutor-MSA-Extensao` → clique em `popup.js`
-2. Clique no ícone de lápis ✏️
-3. Use `Ctrl+F` para encontrar `tradutor-msa/`
-4. Faça a substituição
-5. Commit com a mensagem:
-```
-fix: corrige URL da review na Edge Store
+async function clearHistory() {
+  const shouldClear = window.confirm('Deseja remover todo o histórico salvo localmente?');
+  if (!shouldClear) return;
+
+  await storageSet({ [STORAGE_KEYS.history]: [] });
+  await loadHistory();
+  setStatus('Histórico removido.', 'success');
+}
+
+async function loadSettings() {
+  const settings = await storageGet([STORAGE_KEYS.lastSource, STORAGE_KEYS.lastTarget]);
+  sourceLangSelect.value = ensureLanguageValue(settings[STORAGE_KEYS.lastSource], DEFAULT_SOURCE, sourceLangSelect);
+  targetLangSelect.value = ensureLanguageValue(settings[STORAGE_KEYS.lastTarget], DEFAULT_TARGET, targetLangSelect);
+}
+
+function ensureLanguageValue(value, fallback, selectEl) {
+  if (!value) return fallback;
+  const hasValue = Array.from(selectEl.options).some((option) => option.value === value);
+  return hasValue ? value : fallback;
+}
+
+async function preloadContextMenuSelection() {
+  const params = new URLSearchParams(window.location.search);
+  const rawText = params.get('text');
+  const auto = params.get('auto') === 'true';
+
+  if (!rawText) return;
+  const text = sanitizeInput(rawText);
+  sourceText.value = text;
+  updateActionButtons();
+
+  if (auto && text) handleTranslate();
+}
+
+async function showReviewBannerIfNeeded() {
+  const settings = await storageGet([STORAGE_KEYS.translationCount, STORAGE_KEYS.hasReviewed]);
+  if (settings[STORAGE_KEYS.hasReviewed]) return;
+  if ((settings[STORAGE_KEYS.translationCount] || 0) >= REVIEW_THRESHOLD) {
+    reviewBanner.hidden = false;
+  }
+}
+
+function hideReviewBanner() {
+  reviewBanner.hidden = true;
+}
+
+async function incrementTranslationCount() {
+  const current = await storageGet([STORAGE_KEYS.translationCount]);
+  const count = (current[STORAGE_KEYS.translationCount] || 0) + 1;
+  await storageSet({ [STORAGE_KEYS.translationCount]: count });
+
+  if (count >= REVIEW_THRESHOLD) reviewBanner.hidden = false;
+}
+
+async function getFromCache(key) {
+  const { [STORAGE_KEYS.cache]: cache = [] } = await storageGet([STORAGE_KEYS.cache]);
+  return cache.find((item) => item.key === key) || null;
+}
+
+async function cacheTranslation(key, translatedText, detectedSource) {
+  const { [STORAGE_KEYS.cache]: currentCache = [] } = await storageGet([STORAGE_KEYS.cache]);
+  const cache = currentCache.filter((item) => item.key !== key);
+  cache.unshift({ key, translatedText, detectedSource, timestamp: Date.now() });
+  await storageSet({ [STORAGE_KEYS.cache]: cache.slice(0, CACHE_LIMIT) });
+}
+
+function getFriendlyError(error) {
+  if (!error?.message) return 'Erro inesperado durante a tradução.';
+  if (error.message.includes('HTTP')) return 'Serviço de tradução indisponível no momento.';
+  if (error.message.includes('network')) return 'Sem conexão com a internet.';
+  return error.message;
+}
+
+function getLangName(code) {
+  if (!code || code === 'Autodetect' || code === DEFAULT_SOURCE) return 'Detectado';
+  return LANGUAGES[code] || code;
+}
+
+function setStatus(message, type = 'info') {
+  statusMessage.textContent = message;
+  statusMessage.className = `status-message ${type}`;
+}
+
+function createOption(value, label) {
+  const option = document.createElement('option');
+  option.value = value;
+  option.textContent = label;
+  return option;
+}
+
+function openNewTab(url) {
+  if (browserApi?.tabs?.create) browserApi.tabs.create({ url });
+}
+
+function openPopupWindow(url, width, height) {
+  if (browserApi?.windows?.create) {
+    browserApi.windows.create({ url, type: 'popup', width, height, focused: true });
+  }
+}
+
+function storageGet(keys) {
+  return new Promise((resolve) => {
+    if (!browserApi?.storage?.local) {
+      resolve({});
+      return;
+    }
+
+    browserApi.storage.local.get(keys, (result) => {
+      if (browserApi.runtime?.lastError) {
+        console.error(browserApi.runtime.lastError.message);
+        resolve({});
+        return;
+      }
+      resolve(result || {});
+    });
   });
 }
 
-if (closeRateBtn) {
-  closeRateBtn.addEventListener('click', () => {
-    if (chrome.storage && chrome.storage.local) chrome.storage.local.set({ hasReviewed: true });
-    reviewBanner.style.display = 'none';
+function storageSet(values) {
+  return new Promise((resolve) => {
+    if (!browserApi?.storage?.local) {
+      resolve();
+      return;
+    }
+
+    browserApi.storage.local.set(values, () => {
+      if (browserApi.runtime?.lastError) {
+        console.error(browserApi.runtime.lastError.message);
+      }
+      resolve();
+    });
   });
 }

@@ -1,221 +1,98 @@
-# 🌐 Tradutor MSA — Extensão de Navegador
+# Tradutor MSA Extensão
 
-[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
-[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
-[![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
+**Extensão de tradução leve, segura e focada em produtividade no navegador.**
 
-**Extensão leve e gratuita para tradução instantânea — com voz, histórico e menu de contexto. Disponível para Edge, Firefox e Chrome.**
-
-[![Edge Store](https://img.shields.io/badge/Microsoft%20Edge-Instalar%20Agora-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/tradutor-r%C3%A1pido-edge/dkojdeehfjpjphkndhagfbhknnlckami)
-[![Firefox Add-ons](https://img.shields.io/badge/Firefox-Instalar%20Agora-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/pt-BR/firefox/addon/tradutor-msa/)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Em%20breve-AAAAAA?style=for-the-badge&logo=googlechrome&logoColor=white)](#instalação)
-
-[![Version](https://img.shields.io/badge/versão-2.1-blue)](https://github.com/fernando-msa/Tradutor-MSA-Extensao/releases)
-[![Changelog](https://img.shields.io/badge/changelog-versionado-informational)](CHANGELOG.md)
-[![License](https://img.shields.io/badge/licença-MIT-green)](LICENSE)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
+![Versão](https://img.shields.io/badge/version-2.2.0-informational)
+![Licença MIT](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
-## ✨ Funcionalidades
-
-| Funcionalidade | Descrição |
-|---|---|
-| 🌍 **Tradução Instantânea** | Tradução via MyMemory API com suporte a dezenas de idiomas |
-| 🔍 **Detecção Automática** | Detecta o idioma de origem automaticamente |
-| 🎤 **Entrada por Voz** | Fale e a extensão converte para texto e traduz |
-| 🔊 **Leitura em Voz Alta** | Ouve a tradução com seleção de voz e idioma |
-| 🔄 **Trocar Idiomas** | Inverte origem/destino com um clique, trocando os textos junto |
-| 📋 **Copiar com 1 Clique** | Copia o texto original ou traduzido para o clipboard |
-| 🖱️ **Menu de Contexto** | Selecione texto em qualquer página e traduza com botão direito |
-| 📜 **Histórico** | Armazena até 20 traduções recentes — clique para recarregar |
-| 💾 **Salva Preferências** | Lembra os idiomas usados na última sessão |
-
----
-
-## 📦 Instalação
-
-### Microsoft Edge *(disponível)*
-
-1. Acesse a [Edge Add-ons Store](https://microsoftedge.microsoft.com/addons/detail/tradutor-r%C3%A1pido-edge/dkojdeehfjpjphkndhagfbhknnlckami)
-2. Clique em **Obter** → **Adicionar extensão**
-
-### Firefox *(disponível)*
-
-1. Acesse a [Firefox Add-ons Store](https://addons.mozilla.org/pt-BR/firefox/addon/tradutor-msa/)
-2. Clique em **Adicionar ao Firefox** → **Adicionar**
-
-### Chrome *(em breve na store)*
-
-Enquanto não está na Chrome Web Store, instale manualmente:
-
-1. Baixe o `.zip` na aba [Releases](https://github.com/fernando-msa/Tradutor-MSA-Extensao/releases)
-2. Descompacte a pasta
-3. No Chrome, acesse `chrome://extensions/`
-4. Ative o **Modo do desenvolvedor** (canto superior direito)
-5. Clique em **Carregar sem compactação** e selecione a pasta descompactada
-
----
-
-
-## 🖼️ Screenshots e GIF
-
-Para manter o repositório compatível (sem duplicar binários), a documentação aponta para os materiais já existentes de loja:
-
-- Popup: `440x280_Tradutor.png`
-- Menu de contexto / promo: `assets/store/listing/bl.promocional.png`
-- GIF de demonstração: publicar como asset de release e linkar nesta seção.
-
----
-
-## 🚀 Releases oficiais
-
-Os builds distribuíveis agora são gerados por **GitHub Releases** via workflow (`.github/workflows/release.yml`).
-
-### Como publicar uma nova versão
-
-1. Atualize o `CHANGELOG.md`
-2. Ajuste a versão no `manifest.json`
-3. Crie uma tag semântica:
-
-```bash
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
-
-4. O GitHub Actions gera automaticamente o arquivo `.zip` em `dist/` e publica nos Releases.
-
----
-
-## 🖥️ Como Usar
-
-### Tradução pelo popup
-
-1. Clique no ícone da extensão na barra do navegador
-2. Digite ou cole o texto no campo esquerdo
-3. Selecione os idiomas de origem e destino
-4. Clique em **Traduzir** ou pressione `Ctrl + Enter`
-
-### Tradução por voz
-
-1. Clique no ícone do microfone 🎤
-2. Fale normalmente — a extensão detecta e traduz automaticamente
-
-> ⚠️ Reconhecimento de voz não disponível no Firefox (limitação da Web Speech API).
-
-### Tradução via menu de contexto
-
-1. Selecione qualquer texto em uma página web
-2. Clique com o botão direito
-3. Escolha **Traduzir com MSA**
-
-### Histórico
-
-- Acesse a aba **Histórico** no popup para ver as últimas 20 traduções
-- Clique em qualquer item para recarregá-lo no tradutor
-
----
-
-## 🛠️ Estrutura do Projeto
-
-```
-Tradutor-MSA-Extensao/
-├── manifest.json                 # Configuração da extensão (Manifest V3)
-├── popup.html / popup.css / popup.js
-├── background.js / languages.js
-├── permission.html / permission.js
-├── CHANGELOG.md                  # Changelog por versão
-├── .github/
-│   ├── workflows/release.yml     # Build e publicação no GitHub Releases
-│   └── ISSUE_TEMPLATE/           # Templates de bug e feature request
-└── assets/store/listing/         # Materiais promocionais/loja e imagens de documentação
-```
-
----
-
-## 🔐 Permissões Utilizadas
-
-| Permissão | Motivo |
-|---|---|
-| `activeTab` | Capturar texto selecionado na aba ativa |
-| `scripting` | Injetar script para leitura de texto selecionado |
-| `contextMenus` | Adicionar opção no menu de botão direito |
-| `storage` | Salvar histórico de traduções e preferências de idioma |
-
-> Nenhum dado é enviado a servidores próprios. A tradução é feita exclusivamente via [MyMemory API](https://mymemory.translated.net/) (gratuita e sem cadastro).
-
----
-
-## 🧑‍💻 Desenvolvimento Local
-
-### Pré-requisitos
-
-- Navegador Edge, Chrome ou Firefox
-- Nenhuma dependência externa — JavaScript puro
-
-### Rodando localmente
-
-```bash
-# 1. Clone o repositório
-git clone https://github.com/fernando-msa/Tradutor-MSA-Extensao.git
-
-# Edge / Chrome
-# Acesse edge://extensions/ ou chrome://extensions/
-# Ative o Modo do desenvolvedor
-# Clique em "Carregar sem compactação" → selecione a pasta clonada
-
-# Firefox
-# Acesse about:debugging#/runtime/this-firefox
-# Clique em "Carregar extensão temporária" → selecione qualquer arquivo da pasta
-```
-
-Qualquer alteração nos arquivos é refletida ao clicar em **Atualizar** na página de extensões.
-
----
-
-## 🐛 Bugs Conhecidos / Limitações
-
-| Item | Detalhe |
-|---|---|
-| Limite da API gratuita | MyMemory limita ~5.000 palavras/dia por IP sem chave de API |
-| Voz no Firefox | Reconhecimento de voz não suportado (Web Speech API indisponível) |
-| Voz no Chrome | Disponibilidade de vozes varia por sistema operacional |
-| Detecção automática | Textos muito curtos (1–2 palavras) podem ter detecção imprecisa |
-
----
-
-## 🔧 Melhorias Planejadas
-
-- Publicação na Chrome Web Store
-- Suporte a chave de API MyMemory para aumentar o limite diário
-- Tradução automática ao selecionar texto (sem abrir popup)
-- Tema escuro
-- Atalho de teclado configurável
-
----
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas!
-
-1. Faça um fork do repositório
-2. Crie uma branch: `git checkout -b feature/minha-melhoria`
-3. Commite: `git commit -m 'feat: descrição da melhoria'`
-4. Abra um Pull Request
-
-Para reportar bugs ou sugerir funcionalidades, use os templates em [Issues](https://github.com/fernando-msa/Tradutor-MSA-Extensao/issues/new/choose).
-
----
-
-## 👤 Autor
-
-**Fernando S. De Santana Júnior**
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/fernando-junior-1a74ab29b/)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/fernando-msa)
-
----
-
-## 📜 Licença
-
-Distribuído sob licença [MIT](LICENSE).
+## Hero
+Traduza textos rapidamente sem sair da aba atual, com histórico local, suporte a voz e transparência clara sobre envio de dados para API externa.
+
+## Problema que o projeto resolve
+Quem trabalha com documentação, atendimento, estudos ou colaboração internacional precisa traduzir trechos curtos o tempo todo. Alternar entre abas e ferramentas quebra o foco.
+
+## Benefícios principais
+- Fluxo rápido no popup e menu de contexto.
+- UI simples para uso diário.
+- Dados locais sob controle do usuário (histórico + preferências).
+- Transparência explícita: tradução usa serviço externo.
+
+## Funcionalidades
+- Tradução manual de texto.
+- Detecção automática do idioma de origem.
+- Menu de contexto para traduzir seleção.
+- Histórico local das últimas 20 traduções.
+- Cache local das últimas 30 traduções para reduzir chamadas repetidas.
+- Entrada por voz (quando disponível no navegador).
+- Leitura em voz alta da tradução.
+- Copiar texto original/traduzido em um clique.
+
+## Segurança e privacidade
+- Permissões reduzidas ao mínimo necessário.
+- Sem backend próprio.
+- Renderização segura de histórico (sem `innerHTML` para conteúdo externo).
+- Política de privacidade detalhada em [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md).
+- Política de segurança em [`SECURITY.md`](SECURITY.md).
+
+## Compatibilidade
+- Chrome (Manifest V3)
+- Edge (Manifest V3)
+- Firefox (compatibilidade baseada nas APIs equivalentes; voz pode variar)
+
+## Instalação
+### Edge e Firefox
+Use os links oficiais já publicados no perfil do projeto.
+
+### Instalação local (dev)
+1. Clone o repositório.
+2. Abra a página de extensões do navegador.
+3. Ative modo de desenvolvedor.
+4. Carregue a pasta do projeto sem compactar.
+
+## Como usar
+1. Abra o popup da extensão.
+2. Selecione idioma de origem e destino.
+3. Digite, cole ou dite o texto.
+4. Clique em **Traduzir**.
+5. Copie, ouça em voz alta ou recupere no histórico.
+
+## Arquitetura resumida
+- `popup.html/css/js`: UI, estado, tradução, voz, histórico e cache local.
+- `background.js`: criação de menu de contexto e abertura de popup com seleção.
+- `languages.js`: catálogo de idiomas.
+- `manifest.json`: permissões e configurações MV3.
+
+## Considerações de privacidade e uso corporativo
+- O texto enviado para tradução sai do navegador para a MyMemory API.
+- Não use a extensão para conteúdo confidencial sem validação do seu time de segurança/compliance.
+- Para cenários enterprise, o roadmap prevê possibilidade de plugar um provedor próprio no futuro.
+
+## Limitações conhecidas
+- Limites da MyMemory API podem afetar volume diário.
+- Reconhecimento de voz depende de suporte do navegador.
+- A disponibilidade de vozes TTS varia por sistema operacional.
+
+## Roadmap
+### Curto prazo
+- Publicação padronizada nas três stores.
+- Cobertura básica de testes automatizados para fluxo principal.
+
+### Médio prazo
+- Configuração de provedor de tradução alternativo.
+- Exportação/importação opcional do histórico local.
+
+### Longo prazo
+- Camada enterprise com endpoint privado.
+- Políticas administrativas para ambientes corporativos.
+
+## Contribuição
+Consulte [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Suporte
+Consulte [`SUPPORT.md`](SUPPORT.md).
+
+## Licença
+Projeto sob licença [MIT](LICENSE).
