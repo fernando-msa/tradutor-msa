@@ -1,7 +1,7 @@
 // Prefer `chrome` (callback-based) over `browser` (Promise-based) for cross-browser compatibility.
 // When only the Firefox-native `browser` is available, `storageIsPromiseBased` guards the storage helpers.
 const browserApi = globalThis.chrome ?? globalThis.browser;
-const storageIsPromiseBased = browserApi != null && browserApi === globalThis.browser && globalThis.chrome == null;
+const storageIsPromiseBased = !globalThis.chrome && !!globalThis.browser;
 const STORAGE_KEYS = {
   history: 'history',
   lastSource: 'lastSource',
@@ -545,7 +545,7 @@ function storageGet(keys) {
   }
 
   if (storageIsPromiseBased) {
-    return browserApi.storage.local.get(keys).then((r) => r || {}).catch(() => ({}));
+    return browserApi.storage.local.get(keys).then((result) => result || {}).catch(() => ({}));
   }
 
   return new Promise((resolve) => {
