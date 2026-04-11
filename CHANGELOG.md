@@ -1,26 +1,28 @@
 # Changelog
 
-Todas as mudanças relevantes deste projeto serão documentadas neste arquivo.
+Todas as mudanças relevantes deste projeto são documentadas neste arquivo.
 
-O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.2.0] - 2026-04-11
+
 ### Adicionado
-- Workflow de release automatizada no GitHub Actions para gerar `.zip` da extensão e publicar nos GitHub Releases.
-- Templates de issue para bug report e feature request.
-- Seção de mídia no README com referência aos assets existentes (sem duplicar binários).
+- Política de privacidade completa em `PRIVACY_POLICY.md`.
+- Material de publicação para stores em `store/STORE_LISTING.md`.
+- Documentação de contribuição, suporte, conduta e templates de issue/PR.
+- Cache local de traduções recentes para reduzir chamadas duplicadas.
 
 ### Alterado
-- Organização dos arquivos promocionais/loja para `assets/store/`.
+- Refatoração total de `popup.js` com estado explícito, tratamento de erro robusto, renderização segura e melhor UX.
+- Atualização de `popup.html`/`popup.css` com melhorias de acessibilidade, microcopy e feedback visual.
+- `manifest.json` com permissões mínimas, `host_permissions` restrito e CSP explícita.
+- `background.js` simplificado e endurecido para fluxo de menu de contexto.
+- `README.md` reescrito como documentação de produto profissional.
+- `SECURITY.md` atualizado para política real de segurança.
 
-## [2.1.0] - 2026-04-04
-
-### Adicionado
-- Tradução pelo menu de contexto.
-- Histórico de traduções no popup.
-- Suporte a entrada por voz e leitura em voz alta.
-
-### Melhorado
-- Estrutura geral da extensão e compatibilidade com Edge/Firefox.
-
+### Corrigido
+- Código corrompido no final de `popup.js` que quebrava o fluxo de avaliação.
+- Uso de `innerHTML` para renderização de itens de histórico com texto externo.
+- Tratamento inconsistente de erro de tradução/rede.

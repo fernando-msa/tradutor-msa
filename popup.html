@@ -1,105 +1,86 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradutor MSA Extensão</title>
   <link rel="stylesheet" href="popup.css">
   <link rel="icon" href="440x280_Tradutor.png">
-  <!-- Material Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
-
 <body>
   <div class="app-container">
     <header>
       <div class="header-top">
         <div class="logo-area">
           <h1>Tradutor MSA</h1>
+          <p class="subtitle">Leve, prático e transparente</p>
         </div>
-        <button id="supportBtn" class="icon-btn-sm" title="Ajuda e Suporte">
-          <span class="material-icons">help_outline</span>
-        </button>
+        <button id="supportBtn" class="icon-btn-sm" type="button" title="Ajuda e suporte" aria-label="Ajuda e suporte">?</button>
       </div>
-      <nav class="tabs">
-        <button class="tab-btn active" data-tab="translator">
-          <span class="material-icons">translate</span> Tradutor
-        </button>
-        <button class="tab-btn" data-tab="history">
-          <span class="material-icons">history</span> Histórico
-        </button>
+
+      <nav class="tabs" aria-label="Navegação principal">
+        <button class="tab-btn active" data-tab="translator" type="button" aria-controls="translator-view" aria-selected="true">Tradução</button>
+        <button class="tab-btn" data-tab="history" type="button" aria-controls="history-view" aria-selected="false">Histórico</button>
       </nav>
     </header>
 
-    <div id="reviewBanner" class="review-banner" style="display: none;">
-      <div class="review-content">
-        <p>Gostando da extensão? Avalie-nos na loja!</p>
-        <div class="review-actions">
-          <button id="rateBtn" class="rate-btn">Avaliar</button>
-          <button id="closeRateBtn" class="close-rate-btn">Já avaliei / Fechar</button>
-        </div>
+    <div id="reviewBanner" class="review-banner" hidden>
+      <p>Está ajudando no seu dia a dia? Deixe uma avaliação na loja.</p>
+      <div class="review-actions">
+        <button id="rateBtn" class="rate-btn" type="button">Avaliar</button>
+        <button id="closeRateBtn" class="close-rate-btn" type="button">Agora não</button>
       </div>
     </div>
 
-    <main id="translator-view" class="view active">
+    <main id="translator-view" class="view active" aria-label="Tradutor">
       <div class="language-selector">
         <div class="select-group">
+          <label for="sourceLang" class="sr-only">Idioma de origem</label>
           <select id="sourceLang"></select>
         </div>
-        <button id="swapLanguages" class="icon-btn" title="Inverter idiomas">
-          <span class="material-icons">swap_horiz</span>
-        </button>
+        <button id="swapLanguages" class="icon-btn" type="button" title="Inverter idiomas" aria-label="Inverter idiomas">↔</button>
         <div class="select-group">
+          <label for="targetLang" class="sr-only">Idioma de destino</label>
           <select id="targetLang"></select>
         </div>
       </div>
 
-      <div class="input-area">
-        <div class="textarea-container">
-          <textarea id="sourceText" placeholder="Digite para traduzir..."></textarea>
-          <div class="tools">
-            <button id="micBtn" class="tool-btn" title="Falar">
-              <span class="material-icons">mic</span>
-            </button>
-            <button id="copySourceBtn" class="tool-btn" title="Copiar">
-              <span class="material-icons">content_copy</span>
-            </button>
-          </div>
+      <div class="textarea-container">
+        <label for="sourceText" class="sr-only">Texto original</label>
+        <textarea id="sourceText" maxlength="5000" placeholder="Digite, cole ou dite o texto que deseja traduzir."></textarea>
+        <div class="tools">
+          <button id="micBtn" class="tool-btn" type="button" title="Ditado por voz" aria-label="Ditado por voz">🎤</button>
+          <button id="copySourceBtn" class="tool-btn" type="button" title="Copiar texto original" aria-label="Copiar texto original">📋</button>
         </div>
       </div>
 
-      <div class="output-area">
-        <div class="textarea-container">
-          <textarea id="targetText" readonly placeholder="Tradução..."></textarea>
-          <div class="tools">
-            <select id="voiceSelect" class="voice-select" title="Selecionar Voz">
-              <option value="">Voz Padrão</option>
-            </select>
-            <button id="speakBtn" class="tool-btn" title="Ouvir">
-              <span class="material-icons">volume_up</span>
-            </button>
-            <button id="copyTargetBtn" class="tool-btn" title="Copiar">
-              <span class="material-icons">content_copy</span>
-            </button>
-          </div>
+      <div class="textarea-container">
+        <label for="targetText" class="sr-only">Texto traduzido</label>
+        <textarea id="targetText" readonly placeholder="A tradução aparecerá aqui."></textarea>
+        <div class="tools">
+          <label for="voiceSelect" class="sr-only">Selecionar voz</label>
+          <select id="voiceSelect" class="voice-select" title="Selecionar voz de leitura">
+            <option value="">Voz padrão</option>
+          </select>
+          <button id="speakBtn" class="tool-btn" type="button" title="Ler tradução em voz alta" aria-label="Ler tradução em voz alta">🔊</button>
+          <button id="copyTargetBtn" class="tool-btn" type="button" title="Copiar tradução" aria-label="Copiar tradução">📋</button>
         </div>
       </div>
 
       <div class="action-bar">
-        <button id="translateBtn" class="primary-btn">Traduzir</button>
+        <button id="translateBtn" class="primary-btn" type="button">Traduzir</button>
       </div>
-      <div id="statusMessage" class="status-message"></div>
+      <p id="statusMessage" class="status-message" role="status" aria-live="polite"></p>
+      <p id="privacyHint" class="privacy-hint">Aviso: o texto enviado para tradução é processado pela MyMemory API.</p>
     </main>
 
-    <main id="history-view" class="view">
+    <main id="history-view" class="view" aria-label="Histórico">
       <div class="history-header">
         <h2>Recentes</h2>
-        <button id="clearHistoryBtn" class="text-btn">Limpar Tudo</button>
+        <button id="clearHistoryBtn" class="text-btn" type="button">Limpar histórico</button>
       </div>
       <ul id="historyList" class="history-list">
-        <!-- History items will be injected here -->
-        <li class="empty-state">Nenhum histórico ainda.</li>
+        <li class="empty-state">Ainda não há traduções salvas.</li>
       </ul>
     </main>
   </div>
@@ -107,5 +88,4 @@
   <script src="languages.js"></script>
   <script src="popup.js"></script>
 </body>
-
 </html>
