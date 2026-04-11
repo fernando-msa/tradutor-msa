@@ -1,4 +1,4 @@
-const browserApi = globalThis.browser || globalThis.chrome;
+const browserApi = globalThis.chrome ?? globalThis.browser;
 const STORAGE_KEYS = {
   history: 'history',
   lastSource: 'lastSource',
@@ -543,7 +543,7 @@ function storageGet(keys) {
       return;
     }
 
-    browserApi.storage.local.get(keys, (result) => {
+    const maybePromise = browserApi.storage.local.get(keys, (result) => {
       if (browserApi.runtime?.lastError) {
         console.error(browserApi.runtime.lastError.message);
         resolve({});
@@ -551,6 +551,11 @@ function storageGet(keys) {
       }
       resolve(result || {});
     });
+
+    // Firefox's `browser` API returns a Promise; handle it when no callback is invoked.
+    if (maybePromise && typeof maybePromise.then === 'function') {
+      maybePromise.then((r) => resolve(r || {})).catch(() => resolve({}));
+    }
   });
 }
 
@@ -561,11 +566,16 @@ function storageSet(values) {
       return;
     }
 
-    browserApi.storage.local.set(values, () => {
+    const maybePromise = browserApi.storage.local.set(values, () => {
       if (browserApi.runtime?.lastError) {
         console.error(browserApi.runtime.lastError.message);
       }
       resolve();
     });
+
+    // Firefox's `browser` API returns a Promise; handle it when no callback is invoked.
+    if (maybePromise && typeof maybePromise.then === 'function') {
+      maybePromise.then(() => resolve()).catch(() => resolve());
+    }
   });
 }
