@@ -1,7 +1,4 @@
-// Prefer `chrome` (callback-based) over `browser` (Promise-based) for cross-browser compatibility.
-// When only the Firefox-native `browser` is available, `storageIsPromiseBased` guards the storage helpers.
-const browserApi = globalThis.chrome ?? globalThis.browser;
-const storageIsPromiseBased = !globalThis.chrome && !!globalThis.browser;
+const browserApi = globalThis.browser || globalThis.chrome;
 const STORAGE_KEYS = {
   history: 'history',
   lastSource: 'lastSource',
@@ -206,7 +203,11 @@ async function applyTranslationResult(translatedText, detectedSource, target, or
 }
 
 function sanitizeInput(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
+  return String(value || '').trim();
+}
+
+function normalizeForComparison(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 function setTranslatingState(loading) {
@@ -378,7 +379,8 @@ async function saveToHistory(original, translated, source, target) {
   const { [STORAGE_KEYS.history]: existingHistory = [] } = await storageGet([STORAGE_KEYS.history]);
 
   const normalizedOriginal = sanitizeInput(original);
-  const history = existingHistory.filter((item) => sanitizeInput(item.original) !== normalizedOriginal || item.target !== target);
+  const normalizedKey = normalizeForComparison(original);
+  const history = existingHistory.filter((item) => normalizeForComparison(item.original) !== normalizedKey || item.target !== target);
   history.unshift({ original: normalizedOriginal, translated, source, target, timestamp: Date.now() });
 
   await storageSet({ [STORAGE_KEYS.history]: history.slice(0, HISTORY_LIMIT) });
@@ -540,41 +542,59 @@ function openPopupWindow(url, width, height) {
 }
 
 function storageGet(keys) {
-  if (!browserApi?.storage?.local) {
-    return Promise.resolve({});
-  }
-
-  if (storageIsPromiseBased) {
-    return browserApi.storage.local.get(keys).then((result) => result || {}).catch(() => ({}));
-  }
-
   return new Promise((resolve) => {
-    browserApi.storage.local.get(keys, (result) => {
-      if (browserApi.runtime?.lastError) {
-        console.error(browserApi.runtime.lastError.message);
-        resolve({});
-        return;
+    if (!browserApi?.storage?.local) {
+      resolve({});
+      return;
+    }
+
+    try {
+      const maybePromise = browserApi.storage.local.get(keys, (result) => {
+        if (browserApi.runtime?.lastError) {
+          console.error(browserApi.runtime.lastError.message);
+          resolve({});
+          return;
+        }
+        resolve(result || {});
+      });
+
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        maybePromise.then((result) => resolve(result || {})).catch((error) => {
+          console.error(error);
+          resolve({});
+        });
       }
-      resolve(result || {});
-    });
+    } catch (error) {
+      console.error(error);
+      resolve({});
+    }
   });
 }
 
 function storageSet(values) {
-  if (!browserApi?.storage?.local) {
-    return Promise.resolve();
-  }
-
-  if (storageIsPromiseBased) {
-    return browserApi.storage.local.set(values).catch(() => {});
-  }
-
   return new Promise((resolve) => {
-    browserApi.storage.local.set(values, () => {
-      if (browserApi.runtime?.lastError) {
-        console.error(browserApi.runtime.lastError.message);
-      }
+    if (!browserApi?.storage?.local) {
       resolve();
-    });
+      return;
+    }
+
+    try {
+      const maybePromise = browserApi.storage.local.set(values, () => {
+        if (browserApi.runtime?.lastError) {
+          console.error(browserApi.runtime.lastError.message);
+        }
+        resolve();
+      });
+
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        maybePromise.then(() => resolve()).catch((error) => {
+          console.error(error);
+          resolve();
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      resolve();
+    }
   });
 }
