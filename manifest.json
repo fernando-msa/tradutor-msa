@@ -3,6 +3,7 @@
   "name": "Tradutor MSA Extensão",
   "version": "2.2.0",
   "description": "Extensão leve de tradução focada em produtividade, com histórico local, voz e menu de contexto.",
+  "homepage_url": "https://github.com/fernando-msa/tradutor-msa",
   "icons": {
     "16": "440x280_Tradutor.png",
     "48": "440x280_Tradutor.png",

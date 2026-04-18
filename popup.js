@@ -12,8 +12,9 @@ const CACHE_LIMIT = 30;
 const REVIEW_THRESHOLD = 5;
 const DEFAULT_SOURCE = 'autodetect';
 const DEFAULT_TARGET = 'en-US';
-const REVIEW_URL = 'https://microsoftedge.microsoft.com/addons/detail/tradutor-r%C3%A1pido-edge/dkojdeehfjpjphkndhagfbhknnlckami';
-const SUPPORT_URL = 'https://github.com/fernando-msa/Tradutor-MSA-Extensao/issues';
+const EDGE_REVIEW_URL = 'https://microsoftedge.microsoft.com/addons/detail/tradutor-msa-extens%C3%A3o/dkojdeehfjpjphkndhagfbhknnlckami';
+const FIREFOX_REVIEW_URL = 'https://addons.mozilla.org/pt-BR/firefox/addon/tradutor-msa/';
+const SUPPORT_URL = 'https://github.com/fernando-msa/tradutor-msa/issues';
 
 const sourceLangSelect = document.getElementById('sourceLang');
 const targetLangSelect = document.getElementById('targetLang');
@@ -77,7 +78,7 @@ function bindEvents() {
   rateBtn.addEventListener('click', async () => {
     await storageSet({ [STORAGE_KEYS.hasReviewed]: true });
     hideReviewBanner();
-    openNewTab(REVIEW_URL);
+    openNewTab(getReviewUrl());
   });
 
   closeRateBtn.addEventListener('click', async () => {
@@ -531,6 +532,16 @@ function createOption(value, label) {
   return option;
 }
 
+function isFirefox() {
+  if (globalThis.browser && !globalThis.chrome) return true;
+  const extensionUrl = browserApi?.runtime?.getURL?.('') || '';
+  return extensionUrl.startsWith('moz-extension://');
+}
+
+function getReviewUrl() {
+  return isFirefox() ? FIREFOX_REVIEW_URL : EDGE_REVIEW_URL;
+}
+
 function openNewTab(url) {
   if (browserApi?.tabs?.create) browserApi.tabs.create({ url });
 }
@@ -541,60 +552,51 @@ function openPopupWindow(url, width, height) {
   }
 }
 
-function storageGet(keys) {
-  return new Promise((resolve) => {
-    if (!browserApi?.storage?.local) {
-      resolve({});
-      return;
-    }
+async function storageGet(keys) {
+  if (!browserApi?.storage?.local) return {};
 
-    try {
-      const maybePromise = browserApi.storage.local.get(keys, (result) => {
-        if (browserApi.runtime?.lastError) {
-          console.error(browserApi.runtime.lastError.message);
-          resolve({});
-          return;
-        }
-        resolve(result || {});
-      });
-
-      if (maybePromise && typeof maybePromise.then === 'function') {
-        maybePromise.then((result) => resolve(result || {})).catch((error) => {
-          console.error(error);
-          resolve({});
+  try {
+    const result = await browserApi.storage.local.get(keys);
+    return result || {};
+  } catch (promiseError) {
+    return new Promise((resolve) => {
+      try {
+        browserApi.storage.local.get(keys, (result) => {
+          if (browserApi.runtime?.lastError) {
+            console.error(browserApi.runtime.lastError.message);
+            resolve({});
+            return;
+          }
+          resolve(result || {});
         });
+      } catch (callbackError) {
+        console.error(promiseError);
+        console.error(callbackError);
+        resolve({});
       }
-    } catch (error) {
-      console.error(error);
-      resolve({});
-    }
-  });
+    });
+  }
 }
 
-function storageSet(values) {
-  return new Promise((resolve) => {
-    if (!browserApi?.storage?.local) {
-      resolve();
-      return;
-    }
+async function storageSet(values) {
+  if (!browserApi?.storage?.local) return;
 
-    try {
-      const maybePromise = browserApi.storage.local.set(values, () => {
-        if (browserApi.runtime?.lastError) {
-          console.error(browserApi.runtime.lastError.message);
-        }
-        resolve();
-      });
-
-      if (maybePromise && typeof maybePromise.then === 'function') {
-        maybePromise.then(() => resolve()).catch((error) => {
-          console.error(error);
+  try {
+    await browserApi.storage.local.set(values);
+  } catch (promiseError) {
+    await new Promise((resolve) => {
+      try {
+        browserApi.storage.local.set(values, () => {
+          if (browserApi.runtime?.lastError) {
+            console.error(browserApi.runtime.lastError.message);
+          }
           resolve();
         });
+      } catch (callbackError) {
+        console.error(promiseError);
+        console.error(callbackError);
+        resolve();
       }
-    } catch (error) {
-      console.error(error);
-      resolve();
-    }
-  });
+    });
+  }
 }
