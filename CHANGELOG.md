@@ -4,7 +4,7 @@ Todas as mudanças relevantes deste projeto são documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [2.2.1] - 2026-06-12
 
 ### Adicionado
 
@@ -13,7 +13,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [S
 
 ### Alterado
 
-- `README.md` atualizado com seção de processo de release e links oficiais das stores.
+- `README.md` atualizado com notas de lançamento visíveis para usuários.
 
 ### Corrigido
 
@@ -32,6 +32,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [S
 - Alinhamento do workflow de release com o pacote local, incluindo o LICENSE no zip publicado.
 - Lint básico em Node para validar sintaxe JS e bloquear padrões inseguros na base principal.
 - Lint expandido para detectar switch parameters com default no PowerShell e divergência entre pacote local e workflow de release.
+
+## [Não lançado]
 
 ## [2.2.0] - 2026-04-11
 

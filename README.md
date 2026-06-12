@@ -3,7 +3,7 @@
 **Extensão de tradução leve, segura e focada em produtividade no navegador.**
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
-![Versão](https://img.shields.io/badge/version-2.2.0-informational)
+![Versão](https://img.shields.io/badge/version-2.2.1-informational)
 ![Licença MIT](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -14,12 +14,13 @@ Traduza textos rapidamente sem sair da aba atual, com histórico local, suporte 
 
 ## Notas de lançamento
 
-### Última versão publicada: 2.2.0
+### Última versão publicada: 2.2.1
 
-- Refatoração completa do popup com melhorias de UX, acessibilidade e confiabilidade.
-- Permissões reduzidas, CSP explícita e endurecimento do fluxo de menu de contexto.
-- Histórico, cache e preferências continuam locais, com mais robustez no armazenamento.
-- Transparência reforçada sobre o uso da MyMemory API e sobre os limites de privacidade.
+- Release de manutenção com foco em confiabilidade, validação e publicação.
+- Timeout e tratamento seguro para respostas inválidas da API.
+- Recuperação de quota no storage local com limpeza de cache.
+- Feedback de seleção truncada no menu de contexto.
+- Acessibilidade reforçada no popup e alinhamento do pacote de release.
 
 ### Correções e melhorias recentes
 
@@ -32,6 +33,7 @@ Traduza textos rapidamente sem sair da aba atual, com histórico local, suporte 
 
 ### Histórico de lançamentos
 
+- v2.2.1 - 2026-06-12: release de manutenção com correções de confiabilidade, acessibilidade, validação automatizada e publicação.
 - v2.2.0 - 2026-04-11: refatoração técnica do fluxo principal, melhorias de acessibilidade, política de privacidade e endurecimento das permissões.
 - Histórico completo e detalhes acumulados: [CHANGELOG.md](CHANGELOG.md).
 

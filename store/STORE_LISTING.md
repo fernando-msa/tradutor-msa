@@ -1,4 +1,4 @@
-# Store Listing Kit — Tradutor MSA (v2.2.0)
+# Store Listing Kit — Tradutor MSA (v2.2.1)
 
 ## 1) Descrição curta
 
@@ -36,14 +36,14 @@ tradutor, tradução, produtividade, browser extension, chrome extension, edge a
 
 Ao traduzir, o texto é enviado para a MyMemory API (serviço externo). A extensão não possui servidor próprio. Histórico e preferências ficam salvos localmente no navegador e podem ser limpos pelo usuário.
 
-## 7) Notas de atualização (v2.2.0)
+## 7) Notas de atualização (v2.2.1)
 
-- Refatoração técnica completa do popup.
-- Melhorias de UX, acessibilidade e mensagens de erro.
-- Permissões reduzidas e política de privacidade detalhada.
-- Correção de problemas de robustez no fluxo de tradução/avaliação.
+- Release de manutenção com foco em confiabilidade e publicação.
+- Timeout seguro na tradução e tratamento de respostas inválidas.
+- Recuperação de quota do storage com limpeza de cache.
+- Validação automatizada, lint básico e alinhamento do pacote de release.
 
-Versão pronta para colar nas lojas: [RELEASE_NOTES_v2.2.0.md](RELEASE_NOTES_v2.2.0.md).
+Versão pronta para colar nas lojas: [RELEASE_NOTES_v2.2.1.md](RELEASE_NOTES_v2.2.1.md).
 
 ## 8) FAQ curta
 
