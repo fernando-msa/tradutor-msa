@@ -24,7 +24,7 @@
       </nav>
     </header>
 
-    <div id="reviewBanner" class="review-banner" hidden>
+    <div id="reviewBanner" class="review-banner" role="region" aria-label="Solicitação de avaliação" hidden>
       <p>Está ajudando no seu dia a dia? Deixe uma avaliação na loja.</p>
       <div class="review-actions">
         <button id="rateBtn" class="rate-btn" type="button">Avaliar</button>
@@ -36,11 +36,13 @@
       <div class="language-selector">
         <div class="select-group">
           <label for="sourceLang" class="sr-only">Idioma de origem</label>
+          <span id="sourceLangHelp" class="sr-only">Escolha o idioma do texto original. A opção Detectar idioma tenta identificar automaticamente a língua de entrada.</span>
           <select id="sourceLang"></select>
         </div>
-        <button id="swapLanguages" class="icon-btn" type="button" title="Inverter idiomas" aria-label="Inverter idiomas">↔</button>
+        <button id="swapLanguages" class="icon-btn" type="button" title="Inverter idiomas" aria-label="Inverter idiomas"><span aria-hidden="true">↔</span></button>
         <div class="select-group">
           <label for="targetLang" class="sr-only">Idioma de destino</label>
+          <span id="targetLangHelp" class="sr-only">Escolha o idioma para o qual a tradução será gerada.</span>
           <select id="targetLang"></select>
         </div>
       </div>
@@ -49,8 +51,8 @@
         <label for="sourceText" class="sr-only">Texto original</label>
         <textarea id="sourceText" maxlength="5000" placeholder="Digite, cole ou dite o texto que deseja traduzir."></textarea>
         <div class="tools">
-          <button id="micBtn" class="tool-btn" type="button" title="Ditado por voz" aria-label="Ditado por voz">🎤</button>
-          <button id="copySourceBtn" class="tool-btn" type="button" title="Copiar texto original" aria-label="Copiar texto original">📋</button>
+          <button id="micBtn" class="tool-btn" type="button" title="Ditado por voz" aria-label="Ditado por voz"><span aria-hidden="true">🎤</span></button>
+          <button id="copySourceBtn" class="tool-btn" type="button" title="Copiar texto original" aria-label="Copiar texto original"><span aria-hidden="true">📋</span></button>
         </div>
       </div>
 
@@ -62,8 +64,8 @@
           <select id="voiceSelect" class="voice-select" title="Selecionar voz de leitura">
             <option value="">Voz padrão</option>
           </select>
-          <button id="speakBtn" class="tool-btn" type="button" title="Ler tradução em voz alta" aria-label="Ler tradução em voz alta">🔊</button>
-          <button id="copyTargetBtn" class="tool-btn" type="button" title="Copiar tradução" aria-label="Copiar tradução">📋</button>
+          <button id="speakBtn" class="tool-btn" type="button" title="Ler tradução em voz alta" aria-label="Ler tradução em voz alta"><span aria-hidden="true">🔊</span></button>
+          <button id="copyTargetBtn" class="tool-btn" type="button" title="Copiar tradução" aria-label="Copiar tradução"><span aria-hidden="true">📋</span></button>
         </div>
       </div>
 

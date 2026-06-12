@@ -14,10 +14,12 @@ browserApi.runtime.onInstalled.addListener(() => {
 browserApi.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId !== CONTEXT_MENU_ID || !info.selectionText) return;
 
-  const text = info.selectionText.trim().slice(0, 5000);
+  const text = info.selectionText.trim();
+  const wasTruncated = text.length > 5000;
+  const selectedText = text.slice(0, 5000);
+  const url = `popup.html?text=${encodeURIComponent(selectedText)}&auto=true${wasTruncated ? '&truncated=true' : ''}`;
   if (!text) return;
 
-  const url = `popup.html?text=${encodeURIComponent(text)}&auto=true`;
   browserApi.windows.create({
     url,
     type: 'popup',

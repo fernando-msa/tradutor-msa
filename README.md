@@ -12,6 +12,29 @@
 
 Traduza textos rapidamente sem sair da aba atual, com histórico local, suporte a voz e transparência clara sobre envio de dados para API externa.
 
+## Notas de lançamento
+
+### Última versão publicada: 2.2.0
+
+- Refatoração completa do popup com melhorias de UX, acessibilidade e confiabilidade.
+- Permissões reduzidas, CSP explícita e endurecimento do fluxo de menu de contexto.
+- Histórico, cache e preferências continuam locais, com mais robustez no armazenamento.
+- Transparência reforçada sobre o uso da MyMemory API e sobre os limites de privacidade.
+
+### Correções e melhorias recentes
+
+- Timeout de tradução e tratamento de resposta inválida da API.
+- Reidratação correta de itens do histórico com autodetecção.
+- Recuperação de quota no storage local com limpeza do cache.
+- Feedback visível quando a seleção do menu de contexto excede o limite.
+- Melhorias de acessibilidade no popup e na experiência com teclado/leitor de tela.
+- Padronização do pacote de release, incluindo `LICENSE` no zip publicado.
+
+### Histórico de lançamentos
+
+- v2.2.0 - 2026-04-11: refatoração técnica do fluxo principal, melhorias de acessibilidade, política de privacidade e endurecimento das permissões.
+- Histórico completo e detalhes acumulados: [CHANGELOG.md](CHANGELOG.md).
+
 ## Problema que o projeto resolve
 
 Quem trabalha com documentação, atendimento, estudos ou colaboração internacional precisa traduzir trechos curtos o tempo todo. Alternar entre abas e ferramentas quebra o foco.

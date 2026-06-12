@@ -131,4 +131,14 @@ textarea { resize: vertical; min-height: 76px; max-height: 140px; margin-bottom:
   border: 0;
 }
 
+.sr-only-focusable:focus,
+.sr-only-focusable:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+}
+
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

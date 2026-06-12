@@ -1,5 +1,5 @@
 param(
-  [switch]$CleanDist = $true
+  [switch]$CleanDist
 )
 
 Set-StrictMode -Version Latest
@@ -17,6 +17,10 @@ $manifest = Get-Content -Raw -Path $manifestPath | ConvertFrom-Json
 $version = $manifest.version
 if (-not $version) {
   throw 'Versao nao encontrada no manifest.json'
+}
+
+if (-not $PSBoundParameters.ContainsKey('CleanDist')) {
+  $CleanDist = $true
 }
 
 if ($CleanDist) {
@@ -40,7 +44,8 @@ $requiredFiles = @(
   'languages.js',
   'permission.html',
   'permission.js',
-  '440x280_Tradutor.png'
+  '440x280_Tradutor.png',
+  'LICENSE'
 )
 
 foreach ($file in $requiredFiles) {

@@ -31,6 +31,7 @@ const statusMessage = document.getElementById('statusMessage');
 const reviewBanner = document.getElementById('reviewBanner');
 const rateBtn = document.getElementById('rateBtn');
 const closeRateBtn = document.getElementById('closeRateBtn');
+const translatorView = document.getElementById('translator-view');
 const tabs = Array.from(document.querySelectorAll('.tab-btn'));
 const views = Array.from(document.querySelectorAll('.view'));
 const historyList = document.getElementById('historyList');
@@ -41,6 +42,7 @@ let isTranslating = false;
 let lastRequestId = 0;
 let voices = [];
 let speechRecognition;
+let contextMenuSelectionWasTruncated = false;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -90,6 +92,9 @@ function bindEvents() {
 function populateLanguages() {
   sourceLangSelect.textContent = '';
   targetLangSelect.textContent = '';
+
+  sourceLangSelect.setAttribute('aria-describedby', 'sourceLangHelp');
+  targetLangSelect.setAttribute('aria-describedby', 'targetLangHelp');
 
   sourceLangSelect.appendChild(createOption(DEFAULT_SOURCE, 'Detectar idioma'));
   Object.entries(LANGUAGES).forEach(([code, name]) => {
@@ -175,10 +180,31 @@ async function requestTranslation(text, source, target) {
   url.searchParams.set('q', text);
   url.searchParams.set('langpair', `${apiSource}|${target}`);
 
-  const response = await fetch(url.toString());
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+
+  let response;
+  try {
+    response = await fetch(url.toString(), { signal: controller.signal });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('A tradução demorou demais para responder.');
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+
   if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('Resposta inválida do serviço de tradução.');
+  }
+
   if (data.responseStatus !== 200) {
     throw new Error(data.responseDetails || `Erro da API (${data.responseStatus || 'desconhecido'})`);
   }
@@ -192,7 +218,11 @@ async function applyTranslationResult(translatedText, detectedSource, target, or
   targetText.value = translatedText;
   await saveToHistory(originalText, translatedText, detectedSource, target);
   await incrementTranslationCount();
-  setStatus(fromCache ? 'Tradução recuperada do cache local.' : 'Tradução concluída.', 'success');
+  const baseMessage = fromCache ? 'Tradução recuperada do cache local.' : 'Tradução concluída.';
+  setStatus(
+    contextMenuSelectionWasTruncated ? `${baseMessage} O texto selecionado foi truncado para 5000 caracteres.` : baseMessage,
+    'success'
+  );
 
   await storageSet({
     [STORAGE_KEYS.lastSource]: sourceLangSelect.value,
@@ -218,6 +248,11 @@ function setTranslatingState(loading) {
   sourceLangSelect.disabled = loading;
   targetLangSelect.disabled = loading;
   translateBtn.textContent = loading ? 'Traduzindo…' : 'Traduzir';
+  if (loading) {
+    translatorView.setAttribute('aria-busy', 'true');
+  } else {
+    translatorView.removeAttribute('aria-busy');
+  }
 
   if (loading) {
     setStatus('Enviando texto para tradução…', 'info');
@@ -435,7 +470,7 @@ function renderHistory(history) {
 function useHistoryItem(item) {
   sourceText.value = item.original;
   targetText.value = item.translated;
-  sourceLangSelect.value = item.source === 'Autodetect' ? DEFAULT_SOURCE : ensureLanguageValue(item.source, DEFAULT_SOURCE, sourceLangSelect);
+  sourceLangSelect.value = isAutodetectValue(item.source) ? DEFAULT_SOURCE : ensureLanguageValue(item.source, DEFAULT_SOURCE, sourceLangSelect);
   targetLangSelect.value = ensureLanguageValue(item.target, DEFAULT_TARGET, targetLangSelect);
   tabs[0].click();
   updateVoiceOptions();
@@ -463,10 +498,15 @@ function ensureLanguageValue(value, fallback, selectEl) {
   return hasValue ? value : fallback;
 }
 
+function isAutodetectValue(value) {
+  return value === DEFAULT_SOURCE || value === 'Autodetect';
+}
+
 async function preloadContextMenuSelection() {
   const params = new URLSearchParams(window.location.search);
   const rawText = params.get('text');
   const auto = params.get('auto') === 'true';
+  contextMenuSelectionWasTruncated = params.get('truncated') === 'true';
 
   if (!rawText) return;
   const text = sanitizeInput(rawText);
@@ -583,20 +623,58 @@ async function storageSet(values) {
 
   try {
     await browserApi.storage.local.set(values);
+    return true;
   } catch (promiseError) {
-    await new Promise((resolve) => {
+    if (isStorageQuotaError(promiseError)) {
+      await clearStoredCache();
+
+      try {
+        await browserApi.storage.local.set(values);
+        return true;
+      } catch (retryError) {
+        if (!isStorageQuotaError(retryError)) {
+          console.error(retryError);
+        }
+      }
+    }
+
+    return await new Promise((resolve) => {
       try {
         browserApi.storage.local.set(values, () => {
           if (browserApi.runtime?.lastError) {
-            console.error(browserApi.runtime.lastError.message);
+            const lastErrorMessage = browserApi.runtime.lastError.message || '';
+            if (isStorageQuotaError(browserApi.runtime.lastError)) {
+              clearStoredCache().then(() => resolve(false));
+              return;
+            }
+
+            console.error(lastErrorMessage);
+            resolve(false);
+            return;
           }
-          resolve();
+
+          resolve(true);
         });
       } catch (callbackError) {
         console.error(promiseError);
         console.error(callbackError);
-        resolve();
+        resolve(false);
       }
     });
+  }
+}
+
+function isStorageQuotaError(error) {
+  const message = String(error?.message || error?.toString?.() || '');
+  return error?.name === 'QuotaExceededError' || /quota|storage area is full/i.test(message);
+}
+
+async function clearStoredCache() {
+  try {
+    await browserApi.storage.local.set({ [STORAGE_KEYS.cache]: [] });
+  } catch (error) {
+    if (!isStorageQuotaError(error)) {
+      console.error(error);
+    }
   }
 }
